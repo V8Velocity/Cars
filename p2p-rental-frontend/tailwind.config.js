@@ -11,18 +11,19 @@ export default {
         display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
       },
       colors: {
+        'neon-cyan': '#00f0ff',
         carbon: {
-          50:  '#f5f5f5',
-          100: '#e5e5e5',
-          200: '#cccccc',
-          300: '#999999',
-          400: '#666666',
-          500: '#444444',
-          600: '#2a2a2a',
-          700: '#1a1a1a',
-          800: '#111111',
-          900: '#0a0a0a',
-          950: '#050505',
+          50:  '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1', // High contrast body text
+          400: '#94a3b8', // Muted body text
+          500: '#64748b', // Icons/Borders
+          600: '#475569', // Subtle borders
+          700: '#334155', // Hover states
+          800: '#1e293b', // Card borders
+          900: '#0f172a', // Card backgrounds
+          950: '#020617', // Deep background
         },
         neon: {
           cyan: '#00f0ff',

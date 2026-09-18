@@ -1,33 +1,24 @@
-import { useRef, useState } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
-import { Environment, OrbitControls, Float, MeshDistortMaterial } from '@react-three/drei'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
-import FeaturedCars from './components/FeaturedCars'
+import FeaturedFleet from './components/FeaturedFleet'
 import HowItWorks from './components/HowItWorks'
-import Stats from './components/Stats'
 import Testimonials from './components/Testimonials'
 import Footer from './components/Footer'
 import './index.css'
 
 gsap.registerPlugin(useGSAP)
 
-function App() {
+export default function App() {
   return (
-    <div className="relative min-h-screen bg-carbon-950 overflow-hidden">
+    <main className="bg-carbon-950 min-h-screen text-white selection:bg-neon-cyan selection:text-black">
       <Navbar />
-      <main>
-        <Hero />
-        <Stats />
-        <FeaturedCars />
-        <HowItWorks />
-        <Testimonials />
-      </main>
+      <Hero />
+      <FeaturedFleet />
+      <HowItWorks />
+      <Testimonials />
       <Footer />
-    </div>
+    </main>
   )
 }
-
-export default App

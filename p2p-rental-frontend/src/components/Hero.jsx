@@ -1,125 +1,57 @@
-import { useRef, Suspense, useEffect } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, OrbitControls, useGLTF, ContactShadows, Float, Sphere, MeshDistortMaterial } from '@react-three/drei'
+import { useRef, Suspense, useState, useEffect } from 'react'
+import { Canvas } from '@react-three/fiber'
+import { useProgress } from '@react-three/drei'
 import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
+import CarScene from './CarScene'
 
-// --------------------------------------------------
-// 3D Scene Components
-// --------------------------------------------------
+// Loading progress overlay
+function LoadingOverlay() {
+  const { progress, active } = useProgress()
 
-function BMWModel() {
-  const { scene } = useGLTF('/bmw.glb')
-  const modelRef = useRef()
-
-  useEffect(() => {
-    scene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true
-        child.receiveShadow = true
-      }
-    })
-  }, [scene])
-
-  useFrame((state) => {
-    if (modelRef.current) {
-      modelRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.15) * 0.25 + Math.PI * 0.1
-      modelRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.02 - 0.8
-    }
-  })
+  if (!active) return null
 
   return (
-    <primitive
-      ref={modelRef}
-      object={scene}
-      scale={1.2}
-      position={[0, -0.8, 0]}
-      rotation={[0, Math.PI * 0.1, 0]}
-    />
-  )
-}
-
-function FloatingSphere({ position, scale, color, speed, distort, opacity }) {
-  const meshRef = useRef()
-  useFrame((state) => {
-    meshRef.current.rotation.x = state.clock.elapsedTime * speed * 0.2
-    meshRef.current.rotation.z = state.clock.elapsedTime * speed * 0.3
-  })
-  return (
-    <Float speed={1.2} rotationIntensity={0.3} floatIntensity={0.6}>
-      <mesh ref={meshRef} position={position} scale={scale}>
-        <sphereGeometry args={[1, 48, 48]} />
-        <MeshDistortMaterial
-          color={color}
-          roughness={0.15}
-          metalness={0.95}
-          distort={distort}
-          speed={1.5}
-          transparent
-          opacity={opacity || 0.6}
-        />
-      </mesh>
-    </Float>
-  )
-}
-
-function GroundGrid() {
-  return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.01, 0]}>
-      <planeGeometry args={[30, 30, 60, 60]} />
-      <meshBasicMaterial color="#00f0ff" wireframe transparent opacity={0.03} />
-    </mesh>
-  )
-}
-
-function Scene() {
-  return (
-    <>
-      <ambientLight intensity={0.15} />
-      <directionalLight position={[5, 8, 5]} intensity={0.6} color="#ffffff" castShadow />
-      <spotLight position={[-8, 6, 3]} angle={0.25} penumbra={1} intensity={0.5} color="#00f0ff" />
-      <spotLight position={[8, 4, -3]} angle={0.3} penumbra={1} intensity={0.3} color="#ffffff" />
-      <pointLight position={[0, -0.5, 3]} intensity={0.2} color="#00f0ff" distance={8} />
-
-      <Environment preset="night" />
-
-      <BMWModel />
-
-      <ContactShadows
-        position={[0, -1, 0]}
-        opacity={0.4}
-        scale={12}
-        blur={2.5}
-        far={4}
-        color="#00f0ff"
-      />
-
-      <GroundGrid />
-
-      <FloatingSphere position={[5, 2, -5]} scale={0.6} color="#00f0ff" speed={0.2} distort={0.4} opacity={0.25} />
-      <FloatingSphere position={[-5.5, -0.5, -4]} scale={0.35} color="#ffffff" speed={0.4} distort={0.5} opacity={0.15} />
-      <FloatingSphere position={[4, -1.5, -6]} scale={0.25} color="#00f0ff" speed={0.6} distort={0.3} opacity={0.2} />
-
-      <OrbitControls
-        enableZoom={false}
-        enablePan={false}
-        autoRotate
-        autoRotateSpeed={0.3}
-        minPolarAngle={Math.PI / 3}
-        maxPolarAngle={Math.PI / 2.1}
-      />
-    </>
-  )
-}
-
-// Loading fallback
-function Loader() {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center z-20">
+    <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
       <div className="flex flex-col items-center gap-4">
         <div className="w-12 h-12 border-2 border-neon-cyan/20 border-t-neon-cyan rounded-full animate-spin" />
         <span className="text-carbon-400 text-sm font-medium tracking-wide">Loading 3D Model...</span>
+        <div className="w-48 h-1 bg-carbon-800 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-neon-cyan rounded-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <span className="text-carbon-600 text-xs">{Math.round(progress)}%</span>
+      </div>
+    </div>
+  )
+}
+
+// Car silhouette fallback when 3D model fails
+function ModelErrorFallback() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center z-10">
+      <div className="relative">
+        <svg
+          viewBox="0 0 400 160"
+          className="w-[500px] max-w-[80vw] opacity-20"
+          fill="none"
+          stroke="#00f0ff"
+          strokeWidth="1.5"
+        >
+          <path d="M50 120 L80 80 L140 60 L260 60 L320 80 L350 120" strokeLinejoin="round" />
+          <line x1="30" y1="120" x2="370" y2="120" />
+          <circle cx="110" cy="120" r="20" />
+          <circle cx="110" cy="120" r="12" />
+          <circle cx="290" cy="120" r="20" />
+          <circle cx="290" cy="120" r="12" />
+          <path d="M140 60 L150 80 L250 80 L260 60" />
+          <path d="M80 80 L140 80" />
+          <path d="M260 80 L320 80" />
+        </svg>
+        <div className="absolute inset-0 bg-neon-cyan/5 blur-3xl rounded-full" />
       </div>
     </div>
   )
@@ -135,6 +67,21 @@ export default function Hero() {
   const subtextRef = useRef()
   const ctaRef = useRef()
   const searchRef = useRef()
+  const canvasWrapperRef = useRef()
+  const [isVisible, setIsVisible] = useState(true)
+  const [canvasError, setCanvasError] = useState(false)
+
+  // Pause 3D rendering when hero is scrolled out of viewport
+  useEffect(() => {
+    const el = canvasWrapperRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.05 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   useGSAP(() => {
     const tl = gsap.timeline({ defaults: { ease: 'power4.out' } })
@@ -146,39 +93,59 @@ export default function Hero() {
 
   return (
     <section className="relative w-full min-h-screen flex flex-col overflow-hidden" ref={containerRef}>
-      {/* Background orbs */}
-      <div className="orb w-[500px] h-[500px] bg-neon-cyan/10 top-10 left-1/3" />
-      <div className="orb w-[300px] h-[300px] bg-white/5 bottom-20 right-1/4" />
+      {/* Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-screen"
+        style={{ zIndex: 0 }}
+      >
+        <source src="/Smooth_looping_D_tracking_sho.mp4" type="video/mp4" />
+      </video>
 
-      {/* Subtle grid */}
-      <div
-        className="absolute inset-0 opacity-[0.02]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(to right, rgba(255,255,255,0.5) 1px, transparent 1px)`,
-          backgroundSize: '80px 80px',
-        }}
-      />
+      {/* Background orbs */}
+      <div className="orb w-[500px] h-[500px] bg-neon-cyan/10 top-10 left-1/3 z-0" />
+      <div className="orb w-[300px] h-[300px] bg-white/5 bottom-20 right-1/4 z-0" />
 
       {/* Gradient fade at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-carbon-950 to-transparent z-[1]" />
 
       {/* 3D Canvas */}
-      <div className="absolute inset-0 z-0">
-        <Canvas
-          camera={{ position: [4, 1.5, 5], fov: 45 }}
-          gl={{ antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping }}
-          style={{ background: 'transparent' }}
-          shadows
-        >
-          <Suspense fallback={
-            <mesh>
-              <boxGeometry args={[1, 1, 1]} />
-              <meshBasicMaterial color="red" wireframe />
-            </mesh>
-          }>
-            <Scene />
-          </Suspense>
-        </Canvas>
+      <div
+        ref={canvasWrapperRef}
+        className="absolute inset-0 z-0"
+        style={{ contain: 'layout style paint' }}
+      >
+        {canvasError ? (
+          <ModelErrorFallback />
+        ) : (
+          <>
+            <LoadingOverlay />
+            <Canvas
+              dpr={[1, 1.5]}
+              camera={{ position: [4, 1.5, 5], fov: 45 }}
+              frameloop={isVisible ? 'always' : 'never'}
+              gl={{
+                powerPreference: 'high-performance',
+                antialias: true,
+                toneMapping: THREE.ACESFilmicToneMapping,
+                toneMappingExposure: 1.2,
+                alpha: true,
+              }}
+              style={{ background: 'transparent' }}
+              shadows
+              onCreated={(state) => {
+                state.gl.setClearColor(0x000000, 0)
+              }}
+            >
+              <Suspense fallback={null}>
+                <CarScene />
+              </Suspense>
+            </Canvas>
+          </>
+        )}
       </div>
 
       {/* Content Overlay */}
@@ -245,6 +212,3 @@ export default function Hero() {
     </section>
   )
 }
-
-// Preload the GLB model
-useGLTF.preload('/bmw.glb')
